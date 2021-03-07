@@ -1,0 +1,29 @@
+<configuration>
+    <appender name="FILE_INFO" class="ch.qos.logback.core.FileAppender">
+        <file>logs/application_info.log</file>
+        <encoder>
+            <pattern>%date - [%level] - from %logger in %thread
+                %n%message%n%xException%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT_INFO" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+        ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    
+    <logger name="com.deeplearning.nndecrypt.ui" level="INFO" />
+<!--    <logger name="org.datavec" level="INFO" />
+    <logger name="org.nd4j" level="INFO" />-->
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT_INFO" />
+        <appender-ref ref="FILE_INFO" />
+    </root>
+    
+</configuration>
+
