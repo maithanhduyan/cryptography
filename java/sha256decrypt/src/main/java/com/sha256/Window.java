@@ -1,15 +1,17 @@
 package com.sha256;
 
-import java.awt.EventQueue;
+import java.awt.event.ContainerAdapter;
+import java.awt.event.ContainerEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.util.Properties;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
@@ -24,6 +26,10 @@ import org.neuroph.nnet.learning.BackPropagation;
 import org.neuroph.util.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
+import java.awt.SystemColor;
 
 public class Window extends JFrame {
 
@@ -48,29 +54,13 @@ public class Window extends JFrame {
 	BackPropagation backPropagation;
 
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					Window frame = new Window();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	/**
 	 * Create the frame.
 	 */
 	public Window() {
 		setResizable(false);
 		setTitle("SHA256 Decrypt");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 597, 233);
+		setBounds(100, 100, 600, 250);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -101,7 +91,7 @@ public class Window extends JFrame {
 				btnDecryptActionPerformed(evt);
 			}
 		});
-		btnDecrypt.setBounds(106, 97, 89, 23);
+		btnDecrypt.setBounds(106, 99, 89, 23);
 		contentPane.add(btnDecrypt);
 
 		btnClear = new JButton("Clear");
@@ -111,22 +101,38 @@ public class Window extends JFrame {
 				btnClearClicked(e);
 			}
 		});
-		btnClear.setBounds(444, 97, 89, 23);
+		btnClear.setBounds(473, 99, 89, 23);
 		contentPane.add(btnClear);
 
 		lblCurrentIteration = new JLabel("CurrentIteration: 0");
-		lblCurrentIteration.setBounds(10, 155, 115, 14);
+		lblCurrentIteration.setBounds(10, 155, 185, 14);
 		contentPane.add(lblCurrentIteration);
 
 		lblMaxError = new JLabel("MaxError: 0.01");
-		lblMaxError.setBounds(10, 179, 115, 14);
+		lblMaxError.setBounds(10, 179, 185, 14);
 		contentPane.add(lblMaxError);
 
 		lblSha256Result = new JLabel("4c45e424ed2b247804e799df21b85c4bacf966a1fa94a7f46b09556e0ff1e694");
 		lblSha256Result.setBounds(135, 74, 427, 13);
 		contentPane.add(lblSha256Result);
 
-		init();
+		JButton btnReset = new JButton("Reset");
+		btnReset.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				btnResetMouseClicked(e);
+			}
+		});
+		btnReset.setBounds(290, 99, 89, 23);
+		contentPane.add(btnReset);
+
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowOpened(WindowEvent e) {
+				windowLoaded(e);
+			}
+		});
+		// init();
 
 	}
 
@@ -305,7 +311,7 @@ public class Window extends JFrame {
 		// DataSet adhering to the input and output
 		log.info("Create DataSet...");
 
-		int rows = 10;
+		int rows = 1000000;
 		ds = createNewDataSet(inputSize, outputSize, rows);
 
 		log.info("Save DataSet as File...");
@@ -327,7 +333,6 @@ public class Window extends JFrame {
 		});
 
 		log.info("Learn from DataSet...");
-		// ann.learn(ds, backPropagation);
 		// ann.learn(ds, backPropagation);
 		learningThread = new Thread() {
 			@Override
@@ -376,53 +381,74 @@ public class Window extends JFrame {
 		// 4c45e424ed2b247804e799df21b85c4bacf966a1fa94a7f46b09556e0ff1e694
 		// Server Seed Hash:
 		// 0a392fe66536a23f3cea0ec0b5f6e10d456ea2bcf61c2460b716bc301a7b482a
+
 		if (nnCalculate(txtServerSeedHash.getText().trim()).equalsIgnoreCase(lblSha256Result.getText().trim())) {
 			ann.stopLearning();
 		}
 	}
 
+	private void btnResetMouseClicked(MouseEvent e) {
+		txtServerSeedHash.setText("0a392fe66536a23f3cea0ec0b5f6e10d456ea2bcf61c2460b716bc301a7b482a");
+		txtServerSeed.setText("");
+	}
+
 	public void btnDecryptActionPerformed(java.awt.event.ActionEvent evt) {
 		btnDecrypt.setEnabled(false);
 		String inputString = txtServerSeedHash.getText().trim();
+		String outputString = "";
 		if (!inputString.equalsIgnoreCase("")) {
-			String outputString = nnCalculate(inputString);
+			outputString = nnCalculate(inputString);
 			txtServerSeed.setText(outputString);
 		}
 		btnDecrypt.setEnabled(true);
+
 	}
 
-	String nnCalculate(String inputString) {
-		double[] input = DataGenerate.hexToDoubleArr(inputString.trim());
-		ann.setInput(input);
-		ann.calculate();
-		networkOutputOne = ann.getOutput();
+	public void windowLoaded(WindowEvent e) {
+		btnDecrypt.setEnabled(false);
+		initNeuronNetwork();
+		btnDecrypt.setEnabled(true);
+	}
 
-		// Display
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < networkOutputOne.length; i++) {
-			sb.append((int) networkOutputOne[i]);
-		}
-		log.info(sb.toString());
+	private String nnCalculate(String inputString) {
+		String output = "";
+		try {
+			double[] input = DataGenerate.hexToDoubleArr(inputString.trim());
+			ann.setInput(input);
+			ann.calculate();
+			networkOutputOne = ann.getOutput();
 
-		String binaryStr = sb.toString();
-		int length = binaryStr.length();
-		StringBuilder hexoutput = new StringBuilder();
-		for (int i = 0; i < length; i += 8) {
-			String oneByte = binaryStr.substring(i, i + 8);
-			hexoutput.append(DataGenerate.binaryToHex(oneByte).trim());
+			// Display
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < networkOutputOne.length; i++) {
+				sb.append((int) networkOutputOne[i]);
+			}
+			log.info(sb.toString());
+
+			String binaryStr = sb.toString();
+			int length = binaryStr.length();
+			StringBuilder hexoutput = new StringBuilder();
+			for (int i = 0; i < length; i += 8) {
+				String oneByte = binaryStr.substring(i, i + 8);
+				hexoutput.append(DataGenerate.binaryToHex(oneByte).trim());
+			}
+			log.info(hexoutput.toString());
+			return hexoutput.toString();
+		} catch (Exception ex) {
+			log.error("Error: " + ex.getMessage());
 		}
-		log.info(hexoutput.toString());
-		return hexoutput.toString();
+		return null;
 	}
 
 	/**
 	 * Components Variable
 	 */
-	JButton btnDecrypt;
-	JButton btnClear;
-	JLabel lblServerSeedHash;
-	JLabel lblServerSeed;
-	JLabel lblCurrentIteration;
-	JLabel lblMaxError;
+	private JButton btnDecrypt;
+	private JButton btnClear;
+	private JLabel lblServerSeedHash;
+	private JLabel lblServerSeed;
+	private JLabel lblCurrentIteration;
+	private JLabel lblMaxError;
 	private JLabel lblSha256Result;
+	private DefaultTableModel tableModel;
 }
