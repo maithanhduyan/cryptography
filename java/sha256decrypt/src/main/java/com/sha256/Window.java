@@ -1,7 +1,5 @@
 package com.sha256;
 
-import java.awt.event.ContainerAdapter;
-import java.awt.event.ContainerEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -11,9 +9,9 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 
 import org.neuroph.core.Layer;
 import org.neuroph.core.NeuralNetwork;
@@ -26,10 +24,6 @@ import org.neuroph.nnet.learning.BackPropagation;
 import org.neuroph.util.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
-import java.awt.SystemColor;
 
 public class Window extends JFrame {
 
@@ -311,7 +305,7 @@ public class Window extends JFrame {
 		// DataSet adhering to the input and output
 		log.info("Create DataSet...");
 
-		int rows = 1000000;
+		int rows = 10000;
 		ds = createNewDataSet(inputSize, outputSize, rows);
 
 		log.info("Save DataSet as File...");
@@ -323,8 +317,8 @@ public class Window extends JFrame {
 		// let's train our NeuralNetwork with the built in BackPropogation LearningRule:
 		log.info("BackPropagation...");
 		backPropagation = new BackPropagation();
-		// backPropagation.setMaxIterations(1000);
-		backPropagation.setMaxError(0.00);
+		 backPropagation.setMaxIterations(1000);
+		//backPropagation.setMaxError(0.09);
 		backPropagation.addListener(new LearningEventListener() {
 			@Override
 			public void handleLearningEvent(LearningEvent event) {
